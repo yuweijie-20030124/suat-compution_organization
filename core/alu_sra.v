@@ -3,5 +3,5 @@ module alu_sra(
     input  wire [4:0]  shamt,
     output wire [31:0] out
 );
-    //todo
+    //TOOD
 endmodule
