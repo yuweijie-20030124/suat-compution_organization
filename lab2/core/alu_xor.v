@@ -4,6 +4,6 @@ module alu_xor(
     output wire [31:0] out
 );
 
-// Please complete the code
+assign out = a ^ b;
 
 endmodule
