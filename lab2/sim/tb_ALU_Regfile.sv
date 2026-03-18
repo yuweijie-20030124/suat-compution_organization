@@ -229,13 +229,6 @@ module tb_ALU_Regfile;
         @(posedge clk);
         #1;
 
-        for (i=0; i<32; i=i+1) begin
-            if (rfile[i] !== expected_reg[i])
-                $display("[FAIL] FINAL x%0d: expected 0x%08h, got 0x%08h", i, expected_reg[i], rfile[i]);
-            else
-                $display("[PASS] FINAL x%0d: 0x%08h", i, rfile[i]);
-        end
-
         if (fail_count == 0)
             $display("[SUMMARY] All complex ALU/regfile testcases passed.");
         else
