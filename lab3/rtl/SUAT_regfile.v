@@ -67,5 +67,3 @@ module SUAT_regfile (
  assign rdata2 = ((rst != `SUAT_RSTABLE) && (ren2 == `SUAT_RENABLE)) ? regs[raddr2] : `SUAT_ZERO32;
 
  endmodule
-
-

@@ -4,25 +4,22 @@ module alu_add(
     input  wire        is_sub, // 是否做减法
     input  wire        is_unsigned, // 是否为无符号数
     output wire [31:0] out,    // 输出结果
-    output wire        lt      // less than
+    output wire        lt,     // less than
+    output wire        equ,    // equal
+    output wire        ne,     // not equal
+    output wire        ge      // greater or equal
 );
 
-// Please complete the code
-    wire [31:0] complement;
-    assign complement = is_sub ? ~b : b;
-    
-    wire cin;
-    assign cin = is_sub ? 1'b1 : 1'b0;
-    
+    // Please complete the code
+    wire    [31:0]  complement;
     wire cout;
-    assign {cout, out} = a + complement + cin;
-    
-    wire overflow;
-    assign overflow = (a[31] == complement[31]) && (out[31] != a[31]);
-    
-    assign lt = is_unsigned ? 
-                ~cout :                          
-                (is_sub ? (overflow ^ out[31]) : 
-                         (a[31] != b[31] ? a[31] : out[31])); 
+    assign complement = b ^ {32{is_sub}};
+    assign {cout, out} = a + complement + is_sub;
+
+    wire msb_xor;
+    assign msb_xor = a[31] ^ b[31];     // 对 a 和 b 的最高位进行异或
+    assign lt = ~(msb_xor | cout) | (msb_xor & (is_unsigned ^ cout));
+
+    // TODO
 
 endmodule
