@@ -50,26 +50,75 @@ wire [`SUAT_DATA]                 ls_sram_wdata;
 wire [3:0]                        ls_sram_wren;
 wire                              ls_sram_cs;
 wire [`SUAT_DATA]                 ls_sram_rdata;
+wire [`SUAT_INST]                 if_mem_rdata;
+wire [`SUAT_DATA]                 ls_mem_rdata;
+wire [3:0]                        lsu_op;
+wire [3:0]                        lsu_wren_raw;
+wire [`SUAT_DATA]                 lsu_wdata_raw;
+wire [`SUAT_DATA]                 lsu_rdata_raw;
+wire                              inst_sb;
+wire                              inst_sh;
+wire                              inst_sw;
+wire                              inst_lb;
+wire                              inst_lh;
+wire                              inst_lw;
+wire                              inst_lbu;
+wire                              inst_lhu;
+wire                              mem_load;
+wire                              mem_store;
+wire [1:0]                        ls_byte_off;
+wire [7:0]                        ls_load_byte;
+wire [15:0]                       ls_load_half;
+wire [3:0]                        sh_wren;
+wire [`SUAT_DATA]                 sh_wdata;
 
 // regfile
 wire [`SUAT_REG] 				reg_id_rs1_data;
 wire [`SUAT_REG] 				reg_id_rs2_data;
 
-reg                             load_wait;
 wire                            load_inst;
 wire                            load_stall;
 
-assign load_inst = id_ls_ctl[3];
-assign load_stall = load_inst & ~load_wait;
-assign reg_wen = wb_wen & ~load_stall;
+assign inst_sb   = (id_ls_ctl == 4'b0001);
+assign inst_sh   = (id_ls_ctl == 4'b0010);
+assign inst_sw   = (id_ls_ctl == 4'b0100);
+assign inst_lb   = (id_ls_ctl == 4'b1001);
+assign inst_lh   = (id_ls_ctl == 4'b1010);
+assign inst_lw   = (id_ls_ctl == 4'b1011);
+assign inst_lbu  = (id_ls_ctl == 4'b1101);
+assign inst_lhu  = (id_ls_ctl == 4'b1110);
+assign mem_load  = inst_lb | inst_lh | inst_lw | inst_lbu | inst_lhu;
+assign mem_store = inst_sb | inst_sh | inst_sw;
 
-always @(posedge clk) begin
-	if (rst == `SUAT_RSTABLE) begin
-		load_wait <= 1'b0;
-	end else begin
-		load_wait <= load_stall;
-	end
-end
+assign load_inst    = id_ls_ctl[3];
+assign load_stall   = 1'b0;
+assign reg_wen      = wb_wen;
+assign ls_sram_addr = exu_data[17:2];
+assign ls_sram_cs   = mem_load | mem_store;
+assign if_sram_rdata = if_sram_cs ? if_mem_rdata : `SUAT_ZERO32;
+assign ls_sram_rdata = ls_sram_cs ? ls_mem_rdata : `SUAT_ZERO32;
+
+assign lsu_op = ({4{id_ls_ctl == 4'b1001}} & 4'b0010) |  // LB
+                ({4{id_ls_ctl == 4'b1011}} & 4'b0001) |  // LW
+                ({4{id_ls_ctl == 4'b0001}} & 4'b1000) |  // SB
+                ({4{id_ls_ctl == 4'b0100}} & 4'b0100);   // SW
+
+assign ls_byte_off  = exu_data[1:0];
+assign ls_load_byte = (ls_byte_off == 2'b00) ? ls_sram_rdata[7:0]   :
+                      (ls_byte_off == 2'b01) ? ls_sram_rdata[15:8]  :
+                      (ls_byte_off == 2'b10) ? ls_sram_rdata[23:16] :
+                                               ls_sram_rdata[31:24];
+assign ls_load_half = ls_byte_off[1] ? ls_sram_rdata[31:16] : ls_sram_rdata[15:0];
+
+assign sh_wren  = ls_byte_off[0] ? 4'b0000 : (ls_byte_off[1] ? 4'b1100 : 4'b0011);
+assign sh_wdata = {2{reg_id_rs2_data[15:0]}};
+
+assign ls_sram_wren = inst_sh ? sh_wren : lsu_wren_raw;
+assign ls_sram_wdata = inst_sh ? sh_wdata : lsu_wdata_raw;
+assign ls_wb_data = inst_lbu ? {24'b0, ls_load_byte} :
+                    inst_lh  ? {{16{ls_load_half[15]}}, ls_load_half} :
+                    inst_lhu ? {16'b0, ls_load_half} :
+                               lsu_rdata_raw;
 
 SUAT_ifu ifu0(
      .clk     (clk       		)
@@ -122,16 +171,13 @@ SUAT_exu exu2(
 );
 
 SUAT_lsu lsu3(
-	 .rst        (rst              )
-	,.alu_res    (exu_data         )
-	,.store_data (reg_id_rs2_data  )
-	,.ls_ctl     (id_ls_ctl        )
-	,.bram_rdata (ls_sram_rdata    )
-	,.bram_addr  (ls_sram_addr     )
-	,.bram_wdata (ls_sram_wdata    )
-	,.bram_wren  (ls_sram_wren     )
-	,.bram_cs    (ls_sram_cs       )
-	,.ls_data_o  (ls_wb_data       )
+ .addr		(exu_data			)
+,.wdata_i	(reg_id_rs2_data	)
+,.rdata_i	(ls_sram_rdata		)
+,.lsu_op	(lsu_op				)
+,.WREN		(lsu_wren_raw		)
+,.wdata_o	(lsu_wdata_raw		)
+,.rdata_o	(lsu_rdata_raw		)
 );
 
 SUAT_wbu wbu4(
@@ -157,16 +203,20 @@ SUAT_regfile reg5(
 	,.ren2 		(id_reg_rs2_ren 		)
 );
 
-SUAT_sram_dual mem6(
-	 .CLK       (clk              )
-	,.I_ADDR    (if_sram_addr     )
-	,.I_CS      (if_sram_cs       )
-	,.I_RDATA   (if_sram_rdata    )
-	,.D_ADDR    (ls_sram_addr     )
-	,.D_WDATA   (ls_sram_wdata    )
-	,.D_WREN    (ls_sram_wren     )
-	,.D_CS      (ls_sram_cs       )
-	,.D_RDATA   (ls_sram_rdata    )
+SUAT_sram imem6(
+	 .CLK	(clk				)
+	,.ADDR	(if_sram_addr[13:0]	)
+	,.WDATA	(`SUAT_ZERO32		)
+	,.WREN	(4'b0000			)
+	,.RDATA	(if_mem_rdata		)
+);
+
+SUAT_sram mem6(
+	 .CLK	(clk				)
+	,.ADDR	(ls_sram_addr[13:0]	)
+	,.WDATA	(ls_sram_wdata		)
+	,.WREN	(ls_sram_wren		)
+	,.RDATA	(ls_mem_rdata		)
 );
 
 assign tb_ex_jump    = exu_jump;

@@ -77,15 +77,10 @@ wire inst_jal   = (opcode[6:2] == `SUAT_JAL)    ;
 wire inst_jalr  = (opcode[6:2] == `SUAT_JALR)   ;
 
 wire inst_sb    = type_store &  ~funct3[2] & ~funct3[1] & ~funct3[0]   ;
-wire inst_sh    = type_store &  ~funct3[2] & ~funct3[1] &  funct3[0]   ;
 wire inst_sw    = type_store &  ~funct3[2] &  funct3[1] & ~funct3[0]   ;
 
 wire inst_lb    = type_load &  ~funct3[2] & ~funct3[1] & ~funct3[0]   ;
-wire inst_lh    = type_load &  ~funct3[2] & ~funct3[1] &  funct3[0]   ;
 wire inst_lw    = type_load &  ~funct3[2] &  funct3[1] & ~funct3[0]   ;
-wire inst_ld    = type_load &  ~funct3[2] &  funct3[1] &  funct3[0]   ;
-wire inst_lbu   = type_load &   funct3[2] & ~funct3[1] & ~funct3[0]   ;
-wire inst_lhu   = type_load &   funct3[2] & ~funct3[1] &  funct3[0]   ;
 
 wire inst_beq   = type_branch & ~funct3[2] & ~funct3[1] & ~funct3[0]   ;
 wire inst_bne   = type_branch & ~funct3[2] & ~funct3[1] &  funct3[0]   ;
@@ -98,7 +93,7 @@ wire inst_add   = type_r & ~funct3[2] & ~funct3[1] & ~funct3[0] & ~funct7[5] & ~
 wire inst_sub   = type_r & ~funct3[2] & ~funct3[1] & ~funct3[0] &  funct7[5] & ~funct7[0];
 wire inst_sll   = type_r & ~funct3[2] & ~funct3[1] &  funct3[0] & ~funct7[0] ;
 wire inst_slt   = type_r & ~funct3[2] &  funct3[1] & ~funct3[0] & ~funct7[0] ;
-wire inst_sltu  = type_r & ~funct3[2] &  funct3[1] &  funct3[0] & ~funct7[0]  ;
+wire inst_sltu  = type_r & ~funct3[2] &  funct3[1] &  funct3[0] & ~funct7[0] ;
 wire inst_xor   = type_r &  funct3[2] & ~funct3[1] & ~funct3[0] & ~funct7[0] ;
 wire inst_srl   = type_r &  funct3[2] & ~funct3[1] &  funct3[0] & ~funct7[5] & ~funct7[0];
 wire inst_sra   = type_r &  funct3[2] & ~funct3[1] &  funct3[0] &  funct7[5] & ~funct7[0];
@@ -140,13 +135,9 @@ assign imm = i_imm & {32{i_imm_en}} | j_imm & {32{j_imm_en}} |
 	u_imm & {32{u_imm_en}} | s_imm & {32{s_imm_en}} | b_imm & {32{b_imm_en}};
 
 assign memctl_op = ({4{inst_sb }} & 4'b0001) |
-                   ({4{inst_sh }} & 4'b0010) |
                    ({4{inst_sw }} & 4'b0100) |
                    ({4{inst_lb }} & 4'b1001) |
-                   ({4{inst_lh }} & 4'b1010) |
-                   ({4{inst_lw }} & 4'b1011) |
-                   ({4{inst_lbu}} & 4'b1101) |
-                   ({4{inst_lhu}} & 4'b1110);
+                   ({4{inst_lw }} & 4'b1011) ;
 
 //output to wb signal 
 assign wbctl_op = rd_wen;
