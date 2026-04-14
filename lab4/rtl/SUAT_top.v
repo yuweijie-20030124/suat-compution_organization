@@ -5,38 +5,6 @@ module SUAT_top(
 	,input wire              	rst
 	// Debug outputs
 	,output wire [`SUAT_PC]   debug_pc
-	,output wire [`SUAT_REG]  debug_gpr0
-	,output wire [`SUAT_REG]  debug_gpr1
-	,output wire [`SUAT_REG]  debug_gpr2
-	,output wire [`SUAT_REG]  debug_gpr3
-	,output wire [`SUAT_REG]  debug_gpr4
-	,output wire [`SUAT_REG]  debug_gpr5
-	,output wire [`SUAT_REG]  debug_gpr6
-	,output wire [`SUAT_REG]  debug_gpr7
-	,output wire [`SUAT_REG]  debug_gpr8
-	,output wire [`SUAT_REG]  debug_gpr9
-	,output wire [`SUAT_REG]  debug_gpr10
-	,output wire [`SUAT_REG]  debug_gpr11
-	,output wire [`SUAT_REG]  debug_gpr12
-	,output wire [`SUAT_REG]  debug_gpr13
-	,output wire [`SUAT_REG]  debug_gpr14
-	,output wire [`SUAT_REG]  debug_gpr15
-	,output wire [`SUAT_REG]  debug_gpr16
-	,output wire [`SUAT_REG]  debug_gpr17
-	,output wire [`SUAT_REG]  debug_gpr18
-	,output wire [`SUAT_REG]  debug_gpr19
-	,output wire [`SUAT_REG]  debug_gpr20
-	,output wire [`SUAT_REG]  debug_gpr21
-	,output wire [`SUAT_REG]  debug_gpr22
-	,output wire [`SUAT_REG]  debug_gpr23
-	,output wire [`SUAT_REG]  debug_gpr24
-	,output wire [`SUAT_REG]  debug_gpr25
-	,output wire [`SUAT_REG]  debug_gpr26
-	,output wire [`SUAT_REG]  debug_gpr27
-	,output wire [`SUAT_REG]  debug_gpr28
-	,output wire [`SUAT_REG]  debug_gpr29
-	,output wire [`SUAT_REG]  debug_gpr30
-	,output wire [`SUAT_REG]  debug_gpr31
 	,output wire [15:0]       debug_lsu_addr
 	,output wire [`SUAT_DATA] debug_lsu_wdata
 	,output wire [3:0]        debug_lsu_wren
@@ -46,7 +14,6 @@ module SUAT_top(
 wire [`SUAT_INST]                 if_id_inst;
 wire [`SUAT_PC]                   if_id_pc;
 wire [`SUAT_PC]					  if_id_snpc;
-wire [15:0]                       if_sram_addr;
 wire [`SUAT_INST]                 if_sram_rdata;
 
 // idu
@@ -77,31 +44,22 @@ wire [`SUAT_DATA]                 ls_wb_data;
 wire [15:0]                       ls_sram_addr;
 wire [`SUAT_DATA]                 ls_sram_wdata;
 wire [3:0]                        ls_sram_wren;
-wire                              ls_sram_cs;
 wire [`SUAT_DATA]                 ls_sram_rdata;
 wire [3:0]                        lsu_op;
 wire [3:0]                        lsu_wren_raw;
 wire [`SUAT_DATA]                 lsu_wdata_raw;
 wire [`SUAT_DATA]                 lsu_rdata_raw;
-wire                              inst_sb;
-wire                              inst_sh;
-wire                              inst_sw;
-wire                              inst_lb;
-wire                              inst_lh;
-wire                              inst_lw;
-wire                              inst_lbu;
-wire                              inst_lhu;
-wire                              mem_load;
-wire                              mem_store;
-wire [1:0]                        ls_byte_off;
-wire [7:0]                        ls_load_byte;
-wire [15:0]                       ls_load_half;
-wire [3:0]                        sh_wren;
-wire [`SUAT_DATA]                 sh_wdata;
 
 // regfile
 wire [`SUAT_REG] 				reg_id_rs1_data;
 wire [`SUAT_REG] 				reg_id_rs2_data;
+
+// 保持 debug 口为组合观测，避免为了观测再额外打一拍，看起来像“不是单周期”。
+
+assign ls_wb_data   = lsu_rdata_raw;
+assign ls_sram_addr = exu_data[15:0];
+assign ls_sram_wdata = lsu_wdata_raw;
+assign ls_sram_wren = lsu_wren_raw;
 
 SUAT_ifu ifu0(
      .clk     (clk       		)
@@ -192,49 +150,17 @@ SUAT_sram imem6(
 
 SUAT_sram mem6(
 	 .CLK	(clk				)
-	,.ADDR	(lsu_rdata_raw[15:2])
-	,.WDATA	(lsu_wdata_raw		)
-	,.WREN	(lsu_wren_raw		)
+	,.ADDR	(ls_sram_addr[15:2])
+	,.WDATA	(ls_sram_wdata		)
+	,.WREN	(ls_sram_wren		)
 	,.RDATA	(ls_sram_rdata		)
 );
 
 // Debug assignments
 assign debug_pc = if_id_pc;
-assign debug_lsu_addr = ls_sram_addr;
-assign debug_lsu_wdata = ls_sram_wdata;
+// 非 store 周期统一清零，testbench 看到的就是本周期真实产生的写存储器请求。
+assign debug_lsu_addr = (ls_sram_wren != 4'b0000) ? ls_sram_addr : 16'h0000;
+assign debug_lsu_wdata = (ls_sram_wren != 4'b0000) ? ls_sram_wdata : `SUAT_ZERO32;
 assign debug_lsu_wren = ls_sram_wren;
-
-assign debug_gpr0 = reg5.regs[0];
-assign debug_gpr1 = reg5.regs[1];
-assign debug_gpr2 = reg5.regs[2];
-assign debug_gpr3 = reg5.regs[3];
-assign debug_gpr4 = reg5.regs[4];
-assign debug_gpr5 = reg5.regs[5];
-assign debug_gpr6 = reg5.regs[6];
-assign debug_gpr7 = reg5.regs[7];
-assign debug_gpr8 = reg5.regs[8];
-assign debug_gpr9 = reg5.regs[9];
-assign debug_gpr10 = reg5.regs[10];
-assign debug_gpr11 = reg5.regs[11];
-assign debug_gpr12 = reg5.regs[12];
-assign debug_gpr13 = reg5.regs[13];
-assign debug_gpr14 = reg5.regs[14];
-assign debug_gpr15 = reg5.regs[15];
-assign debug_gpr16 = reg5.regs[16];
-assign debug_gpr17 = reg5.regs[17];
-assign debug_gpr18 = reg5.regs[18];
-assign debug_gpr19 = reg5.regs[19];
-assign debug_gpr20 = reg5.regs[20];
-assign debug_gpr21 = reg5.regs[21];
-assign debug_gpr22 = reg5.regs[22];
-assign debug_gpr23 = reg5.regs[23];
-assign debug_gpr24 = reg5.regs[24];
-assign debug_gpr25 = reg5.regs[25];
-assign debug_gpr26 = reg5.regs[26];
-assign debug_gpr27 = reg5.regs[27];
-assign debug_gpr28 = reg5.regs[28];
-assign debug_gpr29 = reg5.regs[29];
-assign debug_gpr30 = reg5.regs[30];
-assign debug_gpr31 = reg5.regs[31];
 
 endmodule
