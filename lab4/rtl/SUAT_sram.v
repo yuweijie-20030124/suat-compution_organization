@@ -24,7 +24,7 @@ localparam AWT = ((1<<(AW-0))-1);
 
   // initialization bram
   initial begin
-    $readmemh("/home/yuweijie/suat-compution_organization/lab4/rtl/test_mem.hex",sram);
+    $readmemh("C:/Users/HXC/Desktop/suat-compution_organization/lab4/rtl/ai.hex",sram);
   end
 
   // Infer Block RAM - syntax is very specific.

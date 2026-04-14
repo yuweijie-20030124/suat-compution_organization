@@ -1,13 +1,45 @@
 `include "define.v"
 
-
 module SUAT_top(
 	 input wire              	clk		  
-	,input wire              	rst		  
-	,output wire [`SUAT_PC]  	tb_if_pc
-	,output wire              	tb_ex_jump
-	,output wire [`SUAT_PC]   	tb_ex_jump_pc
-	,output wire [`SUAT_DATA] 	tb_ex_res
+	,input wire              	rst
+	// Debug outputs
+	,output wire [`SUAT_PC]   debug_pc
+	,output wire [`SUAT_REG]  debug_gpr0
+	,output wire [`SUAT_REG]  debug_gpr1
+	,output wire [`SUAT_REG]  debug_gpr2
+	,output wire [`SUAT_REG]  debug_gpr3
+	,output wire [`SUAT_REG]  debug_gpr4
+	,output wire [`SUAT_REG]  debug_gpr5
+	,output wire [`SUAT_REG]  debug_gpr6
+	,output wire [`SUAT_REG]  debug_gpr7
+	,output wire [`SUAT_REG]  debug_gpr8
+	,output wire [`SUAT_REG]  debug_gpr9
+	,output wire [`SUAT_REG]  debug_gpr10
+	,output wire [`SUAT_REG]  debug_gpr11
+	,output wire [`SUAT_REG]  debug_gpr12
+	,output wire [`SUAT_REG]  debug_gpr13
+	,output wire [`SUAT_REG]  debug_gpr14
+	,output wire [`SUAT_REG]  debug_gpr15
+	,output wire [`SUAT_REG]  debug_gpr16
+	,output wire [`SUAT_REG]  debug_gpr17
+	,output wire [`SUAT_REG]  debug_gpr18
+	,output wire [`SUAT_REG]  debug_gpr19
+	,output wire [`SUAT_REG]  debug_gpr20
+	,output wire [`SUAT_REG]  debug_gpr21
+	,output wire [`SUAT_REG]  debug_gpr22
+	,output wire [`SUAT_REG]  debug_gpr23
+	,output wire [`SUAT_REG]  debug_gpr24
+	,output wire [`SUAT_REG]  debug_gpr25
+	,output wire [`SUAT_REG]  debug_gpr26
+	,output wire [`SUAT_REG]  debug_gpr27
+	,output wire [`SUAT_REG]  debug_gpr28
+	,output wire [`SUAT_REG]  debug_gpr29
+	,output wire [`SUAT_REG]  debug_gpr30
+	,output wire [`SUAT_REG]  debug_gpr31
+	,output wire [15:0]       debug_lsu_addr
+	,output wire [`SUAT_DATA] debug_lsu_wdata
+	,output wire [3:0]        debug_lsu_wren
 );
 
 // ifu
@@ -15,7 +47,6 @@ wire [`SUAT_INST]                 if_id_inst;
 wire [`SUAT_PC]                   if_id_pc;
 wire [`SUAT_PC]					  if_id_snpc;
 wire [15:0]                       if_sram_addr;
-wire                              if_sram_cs;
 wire [`SUAT_INST]                 if_sram_rdata;
 
 // idu
@@ -25,8 +56,7 @@ wire [`SUAT_REGADDR] 		  	id_reg_rd_addr  ;
 wire                          	id_reg_rs1_ren	;
 wire                          	id_reg_rs2_ren	;
 
-wire [3:0]      		   		id_ls_ctl;
-wire           		   		 	id_wb_ctl;
+wire [2:0]     		   		 	id_wb_ctl;
 wire [`SUAT_DATA]				data1;
 wire [`SUAT_DATA]				data2;
 wire [`SUAT_DATA]				data3;
@@ -41,7 +71,6 @@ wire [`SUAT_PC]                 exu_jump_pc;
 // wbu
 wire [`SUAT_DATA]	   			wb_reg_rd_data;
 wire							wb_wen;
-wire                            reg_wen;
 
 // lsu
 wire [`SUAT_DATA]                 ls_wb_data;
@@ -50,8 +79,6 @@ wire [`SUAT_DATA]                 ls_sram_wdata;
 wire [3:0]                        ls_sram_wren;
 wire                              ls_sram_cs;
 wire [`SUAT_DATA]                 ls_sram_rdata;
-wire [`SUAT_INST]                 if_mem_rdata;
-wire [`SUAT_DATA]                 ls_mem_rdata;
 wire [3:0]                        lsu_op;
 wire [3:0]                        lsu_wren_raw;
 wire [`SUAT_DATA]                 lsu_wdata_raw;
@@ -76,62 +103,15 @@ wire [`SUAT_DATA]                 sh_wdata;
 wire [`SUAT_REG] 				reg_id_rs1_data;
 wire [`SUAT_REG] 				reg_id_rs2_data;
 
-wire                            load_inst;
-wire                            load_stall;
-
-assign inst_sb   = (id_ls_ctl == 4'b0001);
-assign inst_sh   = (id_ls_ctl == 4'b0010);
-assign inst_sw   = (id_ls_ctl == 4'b0100);
-assign inst_lb   = (id_ls_ctl == 4'b1001);
-assign inst_lh   = (id_ls_ctl == 4'b1010);
-assign inst_lw   = (id_ls_ctl == 4'b1011);
-assign inst_lbu  = (id_ls_ctl == 4'b1101);
-assign inst_lhu  = (id_ls_ctl == 4'b1110);
-assign mem_load  = inst_lb | inst_lh | inst_lw | inst_lbu | inst_lhu;
-assign mem_store = inst_sb | inst_sh | inst_sw;
-
-assign load_inst    = id_ls_ctl[3];
-assign load_stall   = 1'b0;
-assign reg_wen      = wb_wen;
-assign ls_sram_addr = exu_data[17:2];
-assign ls_sram_cs   = mem_load | mem_store;
-assign if_sram_rdata = if_sram_cs ? if_mem_rdata : `SUAT_ZERO32;
-assign ls_sram_rdata = ls_sram_cs ? ls_mem_rdata : `SUAT_ZERO32;
-
-assign lsu_op = ({4{id_ls_ctl == 4'b1001}} & 4'b0010) |  // LB
-                ({4{id_ls_ctl == 4'b1011}} & 4'b0001) |  // LW
-                ({4{id_ls_ctl == 4'b0001}} & 4'b1000) |  // SB
-                ({4{id_ls_ctl == 4'b0100}} & 4'b0100);   // SW
-
-assign ls_byte_off  = exu_data[1:0];
-assign ls_load_byte = (ls_byte_off == 2'b00) ? ls_sram_rdata[7:0]   :
-                      (ls_byte_off == 2'b01) ? ls_sram_rdata[15:8]  :
-                      (ls_byte_off == 2'b10) ? ls_sram_rdata[23:16] :
-                                               ls_sram_rdata[31:24];
-assign ls_load_half = ls_byte_off[1] ? ls_sram_rdata[31:16] : ls_sram_rdata[15:0];
-
-assign sh_wren  = ls_byte_off[0] ? 4'b0000 : (ls_byte_off[1] ? 4'b1100 : 4'b0011);
-assign sh_wdata = {2{reg_id_rs2_data[15:0]}};
-
-assign ls_sram_wren = inst_sh ? sh_wren : lsu_wren_raw;
-assign ls_sram_wdata = inst_sh ? sh_wdata : lsu_wdata_raw;
-assign ls_wb_data = inst_lbu ? {24'b0, ls_load_byte} :
-                    inst_lh  ? {{16{ls_load_half[15]}}, ls_load_half} :
-                    inst_lhu ? {16'b0, ls_load_half} :
-                               lsu_rdata_raw;
-
 SUAT_ifu ifu0(
      .clk     (clk       		)
 	,.rst     (rst       		)
-	,.stall   (load_stall       )
 	,.jump 	  (exu_jump   		)
 	,.jump_pc (exu_jump_pc		)
-	,.bram_rdata(if_sram_rdata  )
+	,.inst_i  (if_sram_rdata  )
 	,.inst_o  (if_id_inst		)
 	,.pc_o    (if_id_pc  		)
 	,.snpc    (if_id_snpc		)
-	,.bram_addr(if_sram_addr    )
-	,.bram_cs (if_sram_cs       )
 );
 
 SUAT_idu idu1(
@@ -151,7 +131,7 @@ SUAT_idu idu1(
 
 	,.exu_op	(exu_op					)
 	,.wbctl_op	(id_wb_ctl				)
-	,.memctl_op	(id_ls_ctl				)
+	,.lsu_op	(lsu_op					)
 
 	,.data1		(data1					)
 	,.data2		(data2					)
@@ -184,7 +164,6 @@ SUAT_wbu wbu4(
 	 .wb_ctl	(id_wb_ctl  			)
 	,.exu_res	(exu_data 				)
 	,.lsu_res	(ls_wb_data 			)
-	,.ls_ctl	(id_ls_ctl  			)
 	,.wb_data	(wb_reg_rd_data 		)
 	,.wb_wen	(wb_wen					)
 );
@@ -194,7 +173,7 @@ SUAT_regfile reg5(
 	,.rst  		(rst					)
 	,.waddr		(id_reg_rd_addr			)
 	,.wdata		(wb_reg_rd_data			)
-	,.wen    	(reg_wen 				)
+	,.wen    	(wb_wen 				)
 	,.raddr1 	(id_reg_rs1_addr		)
 	,.rdata1 	(reg_id_rs1_data		)
 	,.ren1  	(id_reg_rs1_ren 		)
@@ -205,23 +184,57 @@ SUAT_regfile reg5(
 
 SUAT_sram imem6(
 	 .CLK	(clk				)
-	,.ADDR	(if_sram_addr[13:0]	)
+	,.ADDR	(if_id_pc[15:2]		)
 	,.WDATA	(`SUAT_ZERO32		)
 	,.WREN	(4'b0000			)
-	,.RDATA	(if_mem_rdata		)
+	,.RDATA	(if_sram_rdata		)
 );
 
 SUAT_sram mem6(
 	 .CLK	(clk				)
-	,.ADDR	(ls_sram_addr[13:0]	)
-	,.WDATA	(ls_sram_wdata		)
-	,.WREN	(ls_sram_wren		)
-	,.RDATA	(ls_mem_rdata		)
+	,.ADDR	(lsu_rdata_raw[15:2])
+	,.WDATA	(lsu_wdata_raw		)
+	,.WREN	(lsu_wren_raw		)
+	,.RDATA	(ls_sram_rdata		)
 );
 
-assign tb_ex_jump    = exu_jump;
-assign tb_ex_jump_pc = exu_jump_pc;
-assign tb_ex_res     = exu_data;
-assign tb_if_pc      = if_id_pc;
+// Debug assignments
+assign debug_pc = if_id_pc;
+assign debug_lsu_addr = ls_sram_addr;
+assign debug_lsu_wdata = ls_sram_wdata;
+assign debug_lsu_wren = ls_sram_wren;
+
+assign debug_gpr0 = reg5.regs[0];
+assign debug_gpr1 = reg5.regs[1];
+assign debug_gpr2 = reg5.regs[2];
+assign debug_gpr3 = reg5.regs[3];
+assign debug_gpr4 = reg5.regs[4];
+assign debug_gpr5 = reg5.regs[5];
+assign debug_gpr6 = reg5.regs[6];
+assign debug_gpr7 = reg5.regs[7];
+assign debug_gpr8 = reg5.regs[8];
+assign debug_gpr9 = reg5.regs[9];
+assign debug_gpr10 = reg5.regs[10];
+assign debug_gpr11 = reg5.regs[11];
+assign debug_gpr12 = reg5.regs[12];
+assign debug_gpr13 = reg5.regs[13];
+assign debug_gpr14 = reg5.regs[14];
+assign debug_gpr15 = reg5.regs[15];
+assign debug_gpr16 = reg5.regs[16];
+assign debug_gpr17 = reg5.regs[17];
+assign debug_gpr18 = reg5.regs[18];
+assign debug_gpr19 = reg5.regs[19];
+assign debug_gpr20 = reg5.regs[20];
+assign debug_gpr21 = reg5.regs[21];
+assign debug_gpr22 = reg5.regs[22];
+assign debug_gpr23 = reg5.regs[23];
+assign debug_gpr24 = reg5.regs[24];
+assign debug_gpr25 = reg5.regs[25];
+assign debug_gpr26 = reg5.regs[26];
+assign debug_gpr27 = reg5.regs[27];
+assign debug_gpr28 = reg5.regs[28];
+assign debug_gpr29 = reg5.regs[29];
+assign debug_gpr30 = reg5.regs[30];
+assign debug_gpr31 = reg5.regs[31];
 
 endmodule

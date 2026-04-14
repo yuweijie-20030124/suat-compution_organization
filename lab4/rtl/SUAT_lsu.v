@@ -22,17 +22,16 @@ right_shifter u_right_shifter(
     .out        (shift_rdata)
 );
 
-assign rdata_o = {32{inst_sw}} & shift_rdata | 
-    {32{inst_sb}} & {{24{shift_rdata[7]}},shift_rdata[7:0]};
+assign rdata_o = {32{inst_lw}} & rdata_i | 
+    {32{inst_lb}} & {{24{shift_rdata[7]}},shift_rdata[7:0]};
 
 //-------------------------------------------store---------------------------------------------------//
 
-wire byte_at_00 = inst_lb & (~addr[1]) & (~addr[0]);
-wire byte_at_01 = inst_lb & (~addr[1]) &   addr[0];
-wire byte_at_10 = inst_lb &   addr[1]  & (~addr[0]);
-wire byte_at_11 = inst_lb &   addr[1]  &   addr[0];
-
-wire word_at_00 = inst_lw & (~addr[1]) & (~addr[0]);
+wire byte_at_00 = inst_sb & (~addr[1]) & (~addr[0]);
+wire byte_at_01 = inst_sb & (~addr[1]) &   addr[0];
+wire byte_at_10 = inst_sb &   addr[1]  & (~addr[0]);
+wire byte_at_11 = inst_sb &   addr[1]  &   addr[0];
+wire word_at_00 = inst_sw & (~addr[1]) & (~addr[0]);    
 
 assign WREN[0] = word_at_00 | byte_at_00;
 assign WREN[1] = word_at_00 | byte_at_01;
