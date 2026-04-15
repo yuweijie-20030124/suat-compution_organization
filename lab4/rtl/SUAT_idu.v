@@ -134,10 +134,7 @@ wire [31:0] imm;
 assign imm = i_imm & {32{i_imm_en}} | j_imm & {32{j_imm_en}} |
 	u_imm & {32{u_imm_en}} | s_imm & {32{s_imm_en}} | b_imm & {32{b_imm_en}};
 
-//output to wb signal
-assign wbctl_op[2] = type_load;
-assign wbctl_op[1] = rd_wen & ~type_load;
-assign wbctl_op[0] = rd_wen;
+//output to wb signal TODO
 
 //-------------------------------output--------------------------//
 

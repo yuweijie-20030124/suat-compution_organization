@@ -31,6 +31,7 @@ wire [`SUAT_DATA]				data4;
 
 // exu
 wire [TODO:0]					exu_op;
+wire [`SUAT_DATA]				exu_addr;		
 wire [`SUAT_DATA] 	     		exu_data;
 wire                            exu_jump;
 wire [`SUAT_PC]                 exu_jump_pc;
@@ -55,7 +56,6 @@ wire [`SUAT_REG] 				reg_id_rs1_data;
 wire [`SUAT_REG] 				reg_id_rs2_data;
 
 assign ls_wb_data   = lsu_rdata_raw;
-assign ls_sram_addr = exu_data[15:0];
 assign ls_sram_wdata = lsu_wdata_raw;
 assign ls_sram_wren = lsu_wren_raw;
 
@@ -103,15 +103,17 @@ SUAT_exu exu2(
 	,.exu_op	  (exu_op			)
 	,.exu_jump	  (exu_jump			)
 	,.exu_jump_pc (exu_jump_pc		)
-	,.exu_res     (exu_data			)
+	,.exu_addr    (exu_addr			)
+	,.exu_data    (exu_data			)
 );
 
 SUAT_lsu lsu3(
- .addr		(exu_data			)
-,.wdata_i	(reg_id_rs2_data	)
+ .addr_i	(exu_addr			)
+,.wdata_i	(exu_data			)
 ,.rdata_i	(ls_sram_rdata		)
 ,.lsu_op	(lsu_op				)
 ,.WREN		(lsu_wren_raw		)
+,.addr_o	(ls_sram_addr		)
 ,.wdata_o	(lsu_wdata_raw		)
 ,.rdata_o	(lsu_rdata_raw		)
 );
