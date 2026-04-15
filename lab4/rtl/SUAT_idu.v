@@ -18,9 +18,9 @@ module SUAT_idu(
   	,output    wire [`SUAT_REGADDR] rd_addr 
 
 	//control out signal
-	,output    wire [17:0]        	exu_op
-	,output    wire [2:0]  			wbctl_op
-	,output    wire [3:0]           lsu_op
+	,output    wire [TODO:0]        exu_op
+	,output    wire [TODO:0]  		wbctl_op
+	,output    wire [TODO:0]        lsu_op
 
 	//id out signal
 	,output    wire [`SUAT_DATA]  	data1
@@ -134,8 +134,6 @@ wire [31:0] imm;
 assign imm = i_imm & {32{i_imm_en}} | j_imm & {32{j_imm_en}} |
 	u_imm & {32{u_imm_en}} | s_imm & {32{s_imm_en}} | b_imm & {32{b_imm_en}};
 
-assign lsu_op = {inst_lb, inst_lw, inst_sb, inst_sw};
-
 //output to wb signal
 assign wbctl_op[2] = type_load;
 assign wbctl_op[1] = rd_wen & ~type_load;
@@ -144,32 +142,6 @@ assign wbctl_op[0] = rd_wen;
 //-------------------------------output--------------------------//
 
 // output to exu		TODO
-assign exu_op[17] = 1'b0;
-assign exu_op[16] = 1'b0;
-assign exu_op[15] = inst_bge | inst_bgeu;
-assign exu_op[14] = inst_bne;
-assign exu_op[13] = inst_beq;
-assign exu_op[12] = inst_blt | inst_bltu;
-assign exu_op[11] = type_branch;
-assign exu_op[10] = jump;
-assign exu_op[9] = inst_sltu | inst_slt | inst_sltiu | inst_slti;
-assign exu_op[8] = inst_xor | inst_xori;
-assign exu_op[7] = inst_or | inst_ori;
-assign exu_op[6] = inst_and | inst_andi;
-assign exu_op[5] = type_branch | inst_sltu | inst_slt | inst_sub | inst_sltiu | inst_slti;
-assign exu_op[4] = inst_bltu | inst_bgeu | inst_sltu | inst_sltiu;
-assign exu_op[3] = inst_lui | inst_auipc | jump | type_branch | type_load | type_store | inst_add | inst_sub | inst_addi;
-assign exu_op[2] = inst_srl | inst_sra | inst_sll | inst_srli | inst_srai | inst_slli;
-assign exu_op[1] = inst_sra | inst_srai;
-assign exu_op[0] = inst_srl | inst_sra | inst_srli | inst_srai;
-
-assign data1 = rs1_data & {32{type_r | type_i | type_load | type_store | type_branch}} |
-			   snpc     & {32{jump}} |
-			   pc       & {32{inst_auipc}};
-assign data2 = rs2_data & {32{type_r | type_branch}} |
-			   imm      & {32{type_i | type_load | type_store | inst_lui | inst_auipc}};
-assign data3 = rs1_data & {32{inst_jalr}} |
-			   pc       & {32{type_branch | inst_auipc | inst_jal}};
-assign data4 = imm;
+// you can copy from lab3/rtl/SUAT_idu.v, but you need to modify it according to your exu design.
 
 endmodule

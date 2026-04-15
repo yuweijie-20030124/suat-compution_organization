@@ -23,14 +23,14 @@ wire [`SUAT_REGADDR] 		  	id_reg_rd_addr  ;
 wire                          	id_reg_rs1_ren	;
 wire                          	id_reg_rs2_ren	;
 
-wire [2:0]     		   		 	id_wb_ctl;
+wire [TODO:0]     		   		id_wb_ctl;
 wire [`SUAT_DATA]				data1;
 wire [`SUAT_DATA]				data2;
 wire [`SUAT_DATA]				data3;
 wire [`SUAT_DATA]				data4;
 
 // exu
-wire [17:0]						exu_op;
+wire [TODO:0]					exu_op;
 wire [`SUAT_DATA] 	     		exu_data;
 wire                            exu_jump;
 wire [`SUAT_PC]                 exu_jump_pc;
@@ -45,7 +45,7 @@ wire [15:0]                       ls_sram_addr;
 wire [`SUAT_DATA]                 ls_sram_wdata;
 wire [3:0]                        ls_sram_wren;
 wire [`SUAT_DATA]                 ls_sram_rdata;
-wire [3:0]                        lsu_op;
+wire [TODO:0]                     lsu_op;
 wire [3:0]                        lsu_wren_raw;
 wire [`SUAT_DATA]                 lsu_wdata_raw;
 wire [`SUAT_DATA]                 lsu_rdata_raw;
@@ -53,8 +53,6 @@ wire [`SUAT_DATA]                 lsu_rdata_raw;
 // regfile
 wire [`SUAT_REG] 				reg_id_rs1_data;
 wire [`SUAT_REG] 				reg_id_rs2_data;
-
-// 保持 debug 口为组合观测，避免为了观测再额外打一拍，看起来像“不是单周期”。
 
 assign ls_wb_data   = lsu_rdata_raw;
 assign ls_sram_addr = exu_data[15:0];
@@ -158,7 +156,6 @@ SUAT_sram mem6(
 
 // Debug assignments
 assign debug_pc = if_id_pc;
-// 非 store 周期统一清零，testbench 看到的就是本周期真实产生的写存储器请求。
 assign debug_lsu_addr = (ls_sram_wren != 4'b0000) ? ls_sram_addr : 16'h0000;
 assign debug_lsu_wdata = (ls_sram_wren != 4'b0000) ? ls_sram_wdata : `SUAT_ZERO32;
 assign debug_lsu_wren = ls_sram_wren;
