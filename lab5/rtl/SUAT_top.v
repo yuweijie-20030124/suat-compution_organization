@@ -47,6 +47,7 @@ wire [`SUAT_REG] 				rf_rs1_data;
 wire [`SUAT_REG] 				rf_rs2_data;
 wire                            rf_rd_wen;
 wire [`SUAT_DATA]				rf_rd_data;
+wire [4:0]						rf_rd_addr;
 
 // data sram
 wire [15:0]	ls_sram_addr;
@@ -56,7 +57,7 @@ wire [31:0] ls_sram_rdata;
 
 assign ls_sram_addr = ls_addr[15:0];
 assign ls_sram_wdata = ls_wdata;
-assign ls_sram_wren = (ls_wren & {4{ex_mem_valid}});
+assign ls_sram_wren = // TODO;
 
 // control signals
 wire jump;
@@ -92,6 +93,12 @@ reg [31:0] mem_wb_lsu_data;
 reg [2:0]  mem_wb_wbu_op;
 reg [4:0]  mem_wb_rd_addr;
 
+
+
+// TODO
+/* Implement the state transition control of the multi-cycle processor. 
+   You may use the following state definition for the FSM.*/
+
 /*
 reg [2:0] state;
 localparam S_IF  = 3'd0;
@@ -101,14 +108,11 @@ localparam S_MEM = 3'd3;
 localparam S_WB  = 3'd4;
 */
 
-// You can use the FSM to control the state transitions of the multi-cycle processor.
-
 SUAT_ifu ifu0(
      .clk     		(clk       		)
 	,.rst     		(rst       		)
 	,.jump   		(jump   		)
 	,.jump_pc 		(jump_pc		)
-	,.id_allow_in	(id_allow_in	)
 	,.inst_i  		(iram_rdata  	)
 	,.inst_o  		(if_inst_o		)
 	,.pc_o    		(if_pc_o  		)
@@ -192,8 +196,8 @@ always @(posedge clk) begin
 	// TODO
 end
 
-assign jump =;
-assign jump_pc =;
+assign jump = // TODO;
+assign jump_pc = // TODO;
 
 SUAT_mem mem3(
  .addr_i	(ex_mem_addr		)
@@ -218,7 +222,10 @@ always @(posedge clk) begin
 	// TODO
 end
 
-assign wbu_commit = ;
+assign wbu_commit = // TODO;
+assign rf_rd_addr = // TODO;
+assign rf_rd_data = // TODO;
+assign rf_rd_wen = // TODO;
 
 SUAT_wbu wbu4(
 	 .wbu_op		(mem_wb_wbu_op			)
@@ -231,9 +238,9 @@ SUAT_wbu wbu4(
 SUAT_regfile reg5(
 	 .clk  		(clk				)
 	,.rst  		(rst				)
-	,.waddr		(			)
-	,.wdata		(			)
-	,.wen    	( 			)
+	,.waddr		(rf_rd_addr			)
+	,.wdata		(rf_rd_data			)
+	,.wen    	(rf_rd_wen			)
 	,.raddr1 	(id_rs1_addr		)
 	,.rdata1 	(rf_rs1_data		)
 	,.ren1  	(id_rs1_ren 		)

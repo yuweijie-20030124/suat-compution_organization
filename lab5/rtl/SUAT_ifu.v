@@ -19,8 +19,7 @@ module SUAT_ifu (
  assign inst_o = inst_i;
  assign pc_o   = pc_reg;
 
-// How to update pc_reg? TODO
-
+// TODO: Modify the following always block to update pc_reg correctly
  always@(posedge clk) begin
 	if(rst == `SUAT_RSTABLE)begin
 	    pc_reg <= `SUAT_STARTPC;		
