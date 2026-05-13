@@ -136,6 +136,7 @@ always @(posedge CLK) begin
                     rx_cnt <= rx_cnt + 1;
                 end
             end
+            default : rx_state <= IDLE;
         endcase
     end
 end
